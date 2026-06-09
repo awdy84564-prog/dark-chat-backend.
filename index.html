@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DARK CHAT - شات لقانا</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #fff; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: 250px 1fr; gap: 20px; }
+        .panel { background: #2a2a2a; padding: 15px; border-radius: 8px; border: 1px solid #3a3a3a; }
+        h3 { margin-top: 0; border-bottom: 2px solid #444; padding-bottom: 5px; color: #ffcc00; }
+        .room-btn { display: block; width: 100%; padding: 10px; margin-bottom: 10px; background: #333; color: white; border: none; border-radius: 5px; cursor: pointer; text-align: right; }
+        .room-btn:hover { background: #444; }
+        .chat-box { display: flex; flex-direction: column; height: 400px; background: #111; border-radius: 8px; padding: 10px; overflow-y: auto; border: 1px solid #333; }
+        .message { margin-bottom: 8px; padding: 5px 10px; border-radius: 4px; background: #222; }
+        .role-5 { color: #ff0000; font-weight: bold; } /* سوبر آدمن - أحمر */
+        .role-4 { color: #0088ff; font-weight: bold; } /* آدمن - أزرق */
+        .role-3 { color: #00ff66; font-weight: bold; } /* مراقب سوبر - أخضر */
+        .role-2 { color: #cc00ff; font-weight: bold; } /* مراقب - بنفسجي */
+        .role-1 { color: #ffffff; } /* عضو - أبيض */
+        .role-0 { color: #aaaaaa; font-style: italic; } /* زائر - رمادي */
+        .input-area { display: flex; gap: 10px; margin-top: 10px; }
+        input[type="text"] { flex: 1; padding: 10px; background: #222; color: white; border: 1px solid #444; border-radius: 5px; }
+        button { padding: 10px 20px; background: #ffcc00; color: black; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #e6b800; }
+        .mic-section { margin-top: 15px; background: #222; padding: 10px; border-radius: 5px; text-align: center; }
+        .user-list-item { padding: 5px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+
+<center><h1>👑 شات DARK CHAT 👑</h1></center>
+
+<div class="container">
+    <!-- القائمة الجانبية: الغرف والأعضاء والمايك -->
+    <div class="side-panel">
+        <div class="panel">
+            <h3>🚪 الغرف المتاحة</h3>
+            <button class="room-btn" onclick="switchRoom('Main-Room')">📱 الغرفة الرئيسية</button>
+            <button class="room-btn" onclick="switchRoom('Management-Room')">🛡️ غرفة الإدارة</button>
+        </div>
+        
+        <div class="panel" style="margin-top: 15px;">
+            <h3>🎙️ حالة المايك (حد: 2)</h3>
+            <div id="mic-status-box">المايكات شاغرة حالياً</div>
+            <div class="mic-section">
+                <button id="mic-btn" onclick="toggleMic()" style="background: #ff3333; color: white; width: 100%;">🎤 صعود المايك</button>
+            </div>
+        </div>
+
+        <div class="panel" style="margin-top: 15px;">
+            <h3>👥 المتواجدون حالياً</h3>
+            <div id="user-list"></div>
+        </div>
+    </div>
+
+    <!-- منطقة الشات والمحادثة -->
+    <div class="panel">
+        <h3 id="current-room-title">الغرفة الحالية: غرفة DARK CHAT الرئيسية</h3>
+        <div class="chat-box" id="chat-box"></div>
+        
+        <div class="input-area">
+            <input type="text" id="msg-input" placeholder="اكتب رسالتك هنا المماثلة لـ لقانا..." onkeypress="handleKeyPress(event)">
+            <button onclick="sendMessage()">إرسال</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // طلب اسم ورتبة المستخدم عند الدخول تجريبياً
+    const username = prompt("أدخل اسمك المستعار للشات:") || "زائر_" + Math.floor(Math.random() * 1000);
+    const userRole = prompt("اختر رتبتك للتجربة:\n5: صاحب التطبيق\n4: آدمن\n3: مراقب سوبر\n2: مراقب\n1: عضو\n0: زائر") || "0";
+
+    const socket = io();
+    let currentRoom = "Main-Room";
+    let onMic = false;
+
+    // الدخول التلقائي للغرفة الرئيسية
+    socket.emit('join_room', { username, role: userRole, roomName: currentRoom });
+
+    // استقبال تحديثات الغرفة (الأعضاء والمايكات)
+    socket.on('room_data', (data) => {
+        // تحديث قائمة المتواجدين بالرتب والألوان
+        const userList = document.getElementById('user-list');
+        userList.innerHTML = '';
+        data.users.forEach(user => {
+            userList.innerHTML += `<div class="user-list-item"><span class="role-${user.role}">${user.username}</span></div>`;
+        });
+
+        // تحديث حالة المايك
+        const micBox = document.getElementById('mic-status-box');
+        if(data.activeMics.length === 0) {
+            micBox.innerHTML = "المايكات فارغة 🟢";
+        } else {
+            micBox.innerHTML = `المتحدثين الآن: ${data.activeMics.length} / ${data.maxMics}`;
+        }
+    });
+
+    // استقبال الرسائل الجديدة وعرضها ملونة حسب الرتبة
+    socket.on('new_message', (data) => {
+        const chatBox = document.getElementById('chat-box');
+        chatBox.innerHTML += `<div class="message"><span class="role-${data.role}">${data.username}:</span> ${data.message}</div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+    });
+
+    // حالة المايك عند الطلب
+    socket.on('mic_status', (data) => {
+        const btn = document.getElementById('mic-btn');
+        if(data.success) {
+            onMic = true;
+            btn.innerHTML = "🛑 ترك المايك";
+            btn.style.background = "#555";
+            alert("تم صعودك على المايك بنجاح! (نظام البث الصوتي قيد العمل)");
+        } else {
+            alert("عذراً، المايكات ممتلئة حالياً لشخصين فقط!");
+        }
+    });
+
+    function sendMessage() {
+        const input = document.getElementById('msg-input');
+        if(input.value.trim() === '') return;
+        socket.emit('send_message', { roomName: currentRoom, message: input.value, username, role: userRole });
+        input.value = '';
+    }
+
+    function handleKeyPress(e) {
+        if(e.key === 'Enter') sendMessage();
+    }
+
+    function switchRoom(roomName) {
+        currentRoom = roomName;
+        document.getElementById('current-room-title').innerText = `الغرفة الحالية: ${roomName === 'Main-Room' ? 'غرفة DARK CHAT الرئيسية' : 'غرفة الإدارة والمراقبين'}`;
+        document.getElementById('chat-box').innerHTML = '';
+        if(onMic) { toggleMic(); }
+        socket.emit('join_room', { username, role: userRole, roomName: currentRoom });
+    }
+
+    function toggleMic() {
+        const btn = document.getElementById('mic-btn');
+        if(!onMic) {
+            socket.emit('request_mic', { roomName: currentRoom, userRole });
+        } else {
+            socket.emit('leave_mic', { roomName: currentRoom });
+            onMic = false;
+            btn.innerHTML = "🎤 صعود المايك";
+            btn.style.background = "#ff3333";
+        }
+    }
+</script>
+</body>
+</html>
