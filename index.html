@@ -3,117 +3,272 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DARK CHAT - شات لقانا</title>
+    <title>DARK CHAT - شات لقانا الفخم</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #fff; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: 250px 1fr; gap: 20px; }
-        .panel { background: #2a2a2a; padding: 15px; border-radius: 8px; border: 1px solid #3a3a3a; }
-        h3 { margin-top: 0; border-bottom: 2px solid #444; padding-bottom: 5px; color: #ffcc00; }
-        .room-btn { display: block; width: 100%; padding: 10px; margin-bottom: 10px; background: #333; color: white; border: none; border-radius: 5px; cursor: pointer; text-align: right; }
-        .room-btn:hover { background: #444; }
-        .chat-box { display: flex; flex-direction: column; height: 400px; background: #111; border-radius: 8px; padding: 10px; overflow-y: auto; border: 1px solid #333; }
-        .message { margin-bottom: 8px; padding: 5px 10px; border-radius: 4px; background: #222; }
-        .role-5 { color: #ff0000; font-weight: bold; } /* سوبر آدمن - أحمر */
-        .role-4 { color: #0088ff; font-weight: bold; } /* آدمن - أزرق */
-        .role-3 { color: #00ff66; font-weight: bold; } /* مراقب سوبر - أخضر */
-        .role-2 { color: #cc00ff; font-weight: bold; } /* مراقب - بنفسجي */
-        .role-1 { color: #ffffff; } /* عضو - أبيض */
-        .role-0 { color: #aaaaaa; font-style: italic; } /* زائر - رمادي */
-        .input-area { display: flex; gap: 10px; margin-top: 10px; }
-        input[type="text"] { flex: 1; padding: 10px; background: #222; color: white; border: 1px solid #444; border-radius: 5px; }
-        button { padding: 10px 20px; background: #ffcc00; color: black; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #e6b800; }
-        .mic-section { margin-top: 15px; background: #222; padding: 10px; border-radius: 5px; text-align: center; }
-        .user-list-item { padding: 5px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
+        /* تصميم الخلفية العامة المستوحى من لقانا */
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background-color: #0f111a; 
+            color: #e4e6eb; 
+            margin: 0; 
+            padding: 0; 
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* الهيدر العلوي للشات */
+        .app-header {
+            background: linear-gradient(135deg, #1f1c2c, #928dab);
+            padding: 15px 20px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border-bottom: 2px solid #ffcc00;
+            letter-spacing: 2px;
+        }
+
+        /* تقسيم الشاشة الرئيسي */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            height: calc(100vh - 60px);
+            background-color: #121420;
+        }
+
+        /* ستايل القوائم الجانبية */
+        .side-panel {
+            background-color: #1a1d29;
+            border-left: 1px solid #282c3d;
+            border-right: 1px solid #282c3d;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffcc00;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #282c3d;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* تصميم الغرف */
+        .room-item {
+            background-color: #222638;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.3s;
+            border-right: 4px solid transparent;
+            font-weight: 500;
+        }
+        .room-item:hover, .room-item.active {
+            background-color: #2d324d;
+            border-right-color: #ffcc00;
+        }
+
+        /* قسم المايك الصوتي المتطور */
+        .mic-card {
+            background: linear-gradient(145deg, #1e2235, #141724);
+            border: 1px solid #333954;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .mic-box-status {
+            font-size: 14px;
+            color: #a0aec0;
+            margin-bottom: 12px;
+        }
+        .mic-btn-action {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+            background: #ff3b30;
+            color: white;
+            box-shadow: 0 4px 10px rgba(255, 59, 48, 0.3);
+            transition: 0.2s;
+        }
+
+        /* قائمة المستخدمين والرتب بالألوان الدقيقة */
+        .user-row {
+            padding: 8px 10px;
+            background-color: #222638;
+            margin-bottom: 6px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .role-5 { color: #ff3b30; font-weight: bold; text-shadow: 0 0 5px rgba(255,59,48,0.5); } /* تاج الملك */
+        .role-4 { color: #007aff; font-weight: bold; } /* آدمن */
+        .role-3 { color: #34c759; font-weight: bold; } /* مراقب سوبر */
+        .role-2 { color: #af52de; font-weight: bold; } /* مراقب */
+        .role-1 { color: #ffffff; } /* عضو */
+        .role-0 { color: #8e8e93; font-style: italic; } /* زائر */
+
+        /* منطقة المحادثة الوسطى */
+        .chat-area {
+            display: flex;
+            flex-direction: column;
+            background-color: #161926;
+            height: 100%;
+        }
+        .chat-header-bar {
+            background-color: #1a1d29;
+            padding: 15px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-bottom: 1px solid #282c3d;
+            color: #ffcc00;
+        }
+        .chat-messages-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .message-bubble {
+            background-color: #222638;
+            padding: 10px 15px;
+            border-radius: 8px;
+            max-width: 80%;
+            width: fit-content;
+            line-height: 1.5;
+            border: 1px solid #2d324d;
+        }
+        
+        /* صندوق الإرسال السفلي */
+        .chat-input-bar {
+            background-color: #1a1d29;
+            padding: 15px;
+            display: flex;
+            gap: 12px;
+            border-top: 1px solid #282c3d;
+        }
+        .message-field {
+            flex: 1;
+            background-color: #222638;
+            border: 1px solid #333954;
+            color: white;
+            padding: 12px 15px;
+            border-radius: 6px;
+            font-size: 15px;
+            outline: none;
+        }
+        .message-field:focus {
+            border-color: #ffcc00;
+        }
+        .send-btn {
+            background-color: #ffcc00;
+            color: #121420;
+            border: none;
+            padding: 0 25px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .send-btn:hover {
+            background-color: #e6b800;
+        }
     </style>
 </head>
 <body>
 
-<center><h1>👑 شات DARK CHAT 👑</h1></center>
+<div class="app-header">👑 DARK CHAT - مجتمع لقانا العربي 👑</div>
 
-<div class="container">
-    <!-- القائمة الجانبية: الغرف والأعضاء والمايك -->
+<div class="main-layout">
+    <!-- القسم الأيمن: الغرف ونظام المايك الحائي -->
     <div class="side-panel">
-        <div class="panel">
-            <h3>🚪 الغرف المتاحة</h3>
-            <button class="room-btn" onclick="switchRoom('Main-Room')">📱 الغرفة الرئيسية</button>
-            <button class="room-btn" onclick="switchRoom('Management-Room')">🛡️ غرفة الإدارة</button>
-        </div>
+        <div class="panel-title">🚪 غرف المحادثة الصوتية</div>
+        <div class="room-item active" id="btn-Main-Room" onclick="switchRoom('Main-Room')">📱 الغرفة العامة الرئيسية</div>
+        <div class="room-item" id="btn-Management-Room" onclick="switchRoom('Management-Room')">🛡️ ديوانية الإدارة والمراقبين</div>
         
-        <div class="panel" style="margin-top: 15px;">
-            <h3>🎙️ حالة المايك (حد: 2)</h3>
-            <div id="mic-status-box">المايكات شاغرة حالياً</div>
-            <div class="mic-section">
-                <button id="mic-btn" onclick="toggleMic()" style="background: #ff3333; color: white; width: 100%;">🎤 صعود المايك</button>
-            </div>
-        </div>
-
-        <div class="panel" style="margin-top: 15px;">
-            <h3>👥 المتواجدون حالياً</h3>
-            <div id="user-list"></div>
+        <div class="panel-title" style="margin-top: 25px;">🎙️ منصة المايك الحي</div>
+        <div class="mic-card">
+            <div id="mic-status-box" class="mic-box-status">المايك متاح للصعود المتحدث الحالي: 0 / 2</div>
+            <button id="mic-btn" class="mic-btn-action" onclick="toggleMic()">🎤 احجز المايك الآن</button>
         </div>
     </div>
 
-    <!-- منطقة الشات والمحادثة -->
-    <div class="panel">
-        <h3 id="current-room-title">الغرفة الحالية: غرفة DARK CHAT الرئيسية</h3>
-        <div class="chat-box" id="chat-box"></div>
-        
-        <div class="input-area">
-            <input type="text" id="msg-input" placeholder="اكتب رسالتك هنا المماثلة لـ لقانا..." onkeypress="handleKeyPress(event)">
-            <button onclick="sendMessage()">إرسال</button>
+    <!-- القسم الأوسط: شاشة الرسائل والمحادثة الفخمة -->
+    <div class="chat-area">
+        <div class="chat-header-bar" id="current-room-title">المجلس الحالي: الغرفة العامة الرئيسية</div>
+        <div class="chat-messages-container" id="chat-box"></div>
+        <div class="chat-input-bar">
+            <input type="text" id="msg-input" class="message-field" placeholder="أرسل رسالة محترمة داخل الشات..." onkeypress="handleKeyPress(event)">
+            <button class="send-btn" onclick="sendMessage()">إرسال</button>
         </div>
+    </div>
+
+    <!-- القسم الأيسر: الأعضاء المتواجدون والرتب الحالية -->
+    <div class="side-panel">
+        <div class="panel-title">👥 المتواجدون في الغرفة</div>
+        <div id="user-list"></div>
     </div>
 </div>
 
 <script>
-    // طلب اسم ورتبة المستخدم عند الدخول تجريبياً
     const username = prompt("أدخل اسمك المستعار للشات:") || "زائر_" + Math.floor(Math.random() * 1000);
-    const userRole = prompt("اختر رتبتك للتجربة:\n5: صاحب التطبيق\n4: آدمن\n3: مراقب سوبر\n2: مراقب\n1: عضو\n0: زائر") || "0";
+    const userRole = prompt("اختر رتبتك للتجربة:\n5: صاحب التطبيق (تاج أحمر)\n4: آدمن السيرفر (أزرق)\n3: مراقب سوبر (أخضر)\n2: مراقب (بنفسجي)\n1: عضو مسجل\n0: زائر عادي") || "0";
 
     const socket = io();
     let currentRoom = "Main-Room";
     let onMic = false;
 
-    // الدخول التلقائي للغرفة الرئيسية
     socket.emit('join_room', { username, role: userRole, roomName: currentRoom });
 
-    // استقبال تحديثات الغرفة (الأعضاء والمايكات)
     socket.on('room_data', (data) => {
-        // تحديث قائمة المتواجدين بالرتب والألوان
         const userList = document.getElementById('user-list');
         userList.innerHTML = '';
         data.users.forEach(user => {
-            userList.innerHTML += `<div class="user-list-item"><span class="role-${user.role}">${user.username}</span></div>`;
+            let badge = "";
+            if(user.role === 5) badge = "👑 ";
+            if(user.role === 4) badge = "🛡️ ";
+            if(user.role === 3) badge = "⭐ ";
+            userList.innerHTML += `<div class="user-row"><span class="role-${user.role}">${badge}${user.username}</span></div>`;
         });
 
-        // تحديث حالة المايك
         const micBox = document.getElementById('mic-status-box');
         if(data.activeMics.length === 0) {
-            micBox.innerHTML = "المايكات فارغة 🟢";
+            micBox.innerHTML = "المايك فارغ وجاهز للبث الحي 🟢";
         } else {
-            micBox.innerHTML = `المتحدثين الآن: ${data.activeMics.length} / ${data.maxMics}`;
+            micBox.innerHTML = `المتحدثون الآن على المايك: ${data.activeMics.length} / ${data.maxMics}`;
         }
     });
 
-    // استقبال الرسائل الجديدة وعرضها ملونة حسب الرتبة
     socket.on('new_message', (data) => {
         const chatBox = document.getElementById('chat-box');
-        chatBox.innerHTML += `<div class="message"><span class="role-${data.role}">${data.username}:</span> ${data.message}</div>`;
+        chatBox.innerHTML += `<div class="message-bubble"><span class="role-${data.role}">${data.username}:</span> ${data.message}</div>`;
         chatBox.scrollTop = chatBox.scrollHeight;
     });
 
-    // حالة المايك عند الطلب
     socket.on('mic_status', (data) => {
         const btn = document.getElementById('mic-btn');
         if(data.success) {
             onMic = true;
-            btn.innerHTML = "🛑 ترك المايك";
+            btn.innerHTML = "🛑 ترك المايك الحي";
             btn.style.background = "#555";
-            alert("تم صعودك على المايك بنجاح! (نظام البث الصوتي قيد العمل)");
+            btn.style.boxShadow = "none";
         } else {
-            alert("عذراً، المايكات ممتلئة حالياً لشخصين فقط!");
+            alert("عذراً! المايك مشغول حالياً بشخصين، انتظر نزول أحدهم.");
         }
     });
 
@@ -129,8 +284,10 @@
     }
 
     function switchRoom(roomName) {
+        document.getElementById(`btn-${currentRoom}`).classList.remove('active');
         currentRoom = roomName;
-        document.getElementById('current-room-title').innerText = `الغرفة الحالية: ${roomName === 'Main-Room' ? 'غرفة DARK CHAT الرئيسية' : 'غرفة الإدارة والمراقبين'}`;
+        document.getElementById(`btn-${currentRoom}`).classList.add('active');
+                document.getElementById('current-room-title').innerText = `المجلس الحالي: ${roomName === 'Main-Room' ? 'الغرفة العامة الرئيسية' : 'ديوانية الإدارة والمراقبين'}`;
         document.getElementById('chat-box').innerHTML = '';
         if(onMic) { toggleMic(); }
         socket.emit('join_room', { username, role: userRole, roomName: currentRoom });
@@ -143,10 +300,12 @@
         } else {
             socket.emit('leave_mic', { roomName: currentRoom });
             onMic = false;
-            btn.innerHTML = "🎤 صعود المايك";
-            btn.style.background = "#ff3333";
+            btn.innerHTML = "🎤 احجز المايك الآن";
+            btn.style.background = "#ff3b30";
+            btn.style.boxShadow = "0 4px 10px rgba(255, 59, 48, 0.3)";
         }
     }
 </script>
 </body>
 </html>
+
